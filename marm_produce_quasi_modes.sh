@@ -6,7 +6,7 @@
 #SBATCH --threads-per-core=1
 #SBATCH --cpus-per-task=1
 #SBATCH --ntasks=1
-#SBATCH --array=2-200%50
+#SBATCH --array=2-245%50
 #SBATCH --partition=compute
 #SBATCH --mem=3G
 #SBATCH --nodes=1
@@ -26,5 +26,6 @@ fi
 # execute c++ code for all files with N=2048
 # mkdir -p /data1/shared/igraham/datasets/fast_sim2
 cd /home1/igraham/Projects/quasilocalized_modes
+root=/home1/igraham/Projects/hoomd_test
 dir=`sed "${NUM}q;d" process_files.txt`
-/home1/igraham/anaconda3/envs/softmatter/bin/python quasi_modes.py -d $dir
+/home1/igraham/anaconda3/envs/softmatter/bin/python quasi_modes.py -d ${root}/${dir}

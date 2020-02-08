@@ -4,7 +4,7 @@ Script to grab a hoomd file and the local mode data for it
 
 import argparse
 import numpy as np
-import pandas as pd
+#import pandas as pd
 import sys
 import time
 import os
@@ -29,11 +29,21 @@ f.close()
 
 f = gsd.hoomd.open(traj, 'rb')
 
+quasi = pjoin(root_dir, "quasi")
+
+os.makedirs(quasi)
+
 # probably should save data to disk in batches so not to end with
 
 for i in np.arange(0, nframes, 10):
+    outfile = pjoin(quasi, i)
+    if i%50 == 0:
+        print(outfile)
     mc = hc.mode_calculator_gsd(f, i)
-    filt_vecs = mc.filter_modes()
-    evecs = mc.evecs
+    filt_vecs = np.array(mc.filter_modes())
+    evecs = mc.evecs.T
     evals = mc.evals
+    np.savez(outfile, filt_vecs=filt_vecs, evecs=evecs, evals=evals)
+
+    
 
