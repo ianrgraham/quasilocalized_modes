@@ -400,7 +400,7 @@ class mode_calculator:
 Below I made some nice wrappers for returning a mode_calculator object for the different systems that I have
 """
 
-def mode_calculator_gsd(gsd_file_handle, idx, r_func=get_hoomd_bidisperse_r, k_func=hertzian_k, e_func=None, use_KDTree=False, k=30, dim=2):
+def mode_calculator_gsd(gsd_file_handle, idx, r_func=get_hoomd_bidisperse_r, k_func=hertzian_k, e_func=hertzian_e, use_KDTree=False, k=30, dim=2):
     """
     for gsd files produced from hoomd
     """
@@ -410,7 +410,7 @@ def mode_calculator_gsd(gsd_file_handle, idx, r_func=get_hoomd_bidisperse_r, k_f
                         s.configuration.box, k_func, e_func=e_func, k=k, dim=dim, use_KDTree=use_KDTree)
     return mc
 
-def mode_calculator_nc(s, idx, k_func=hertzian_k, e_func=None, use_KDTree=False, k=30, dim=2):
+def mode_calculator_nc(s, idx, k_func=hertzian_k, e_func=hertzian_e, use_KDTree=False, k=30, dim=2):
     """
     for netcdf files produced from Carl Goodrich's jsrc code
     """

@@ -6,7 +6,7 @@
 #SBATCH --threads-per-core=1
 #SBATCH --cpus-per-task=1
 #SBATCH --ntasks=1
-#SBATCH --array=2-245%50
+#SBATCH --array=1-100%50
 #SBATCH --partition=compute
 #SBATCH --mem=3G
 #SBATCH --nodes=1

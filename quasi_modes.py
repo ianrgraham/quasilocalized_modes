@@ -13,37 +13,77 @@ import gsd.fl
 import hessian_calc as hc
 
 parser = argparse.ArgumentParser(description="Produce quasilocalized mode data from hoomd trajectories.")
-parser.add_argument('-d','--dir',help="Directory of the trajectory.", type=float, default=1.1)
+parser.add_argument('-d','--dir',help="Directory of the trajectory.", type=str, default="")
 cmdargs = parser.parse_args()
 
 root_dir = cmdargs.dir
+
+SSP = int(np.round(4*float(root_dir.split('/')[-1].split("_")[-2].replace("maxStrain",""))/0.0001))
+
+print(SSP)
+
+overwrite = False
+
+assert(root_dir != "")
 
 pjoin = os.path.join
 
 traj = pjoin(root_dir,"traj.gsd")
 
 # get traj info
-f = gsd.fl.open(traj, 'rb')
+f = gsd.fl.open(name=traj, mode='rb')
 nframes = f.nframes
 f.close()
 
-f = gsd.hoomd.open(traj, 'rb')
+print(nframes)
 
-quasi = pjoin(root_dir, "quasi")
+with gsd.hoomd.open(name=traj, mode='rb') as t:
 
-os.makedirs(quasi)
+    quasi = pjoin(root_dir, "quasi")
 
-# probably should save data to disk in batches so not to end with
+    os.makedirs(quasi, exist_ok=True)
 
-for i in np.arange(0, nframes, 10):
-    outfile = pjoin(quasi, i)
-    if i%50 == 0:
-        print(outfile)
-    mc = hc.mode_calculator_gsd(f, i)
-    filt_vecs = np.array(mc.filter_modes())
-    evecs = mc.evecs.T
-    evals = mc.evals
-    np.savez(outfile, filt_vecs=filt_vecs, evecs=evecs, evals=evals)
+    # probably should save data to disk in batches so not to end with
 
-    
-
+    for i in range(0, 2*SSP+1, 10):
+        outfile = pjoin(quasi, str(i))
+        if os.path.exists(outfile+".npz") and not overwrite:
+            print("Output already exists. We won't waste time reproducing it")
+            continue
+        if i%50 == 0:
+            print("On step", outfile)
+            time1 = time.time()
+        try:
+            mc = hc.mode_calculator_gsd(t, i)
+            filt_vecs = np.array(mc.filter_modes())
+            evecs = mc.evecs.T
+            evals = mc.evals
+            if i%SSP == 0:
+                np.savez_compressed(outfile, filt_vecs=filt_vecs, evecs=evecs, evals=evals)
+            else:
+                np.savez_compressed(outfile, filt_vecs=filt_vecs, evals=evals)
+            if i%50 == 0:
+                print(f"Step took {time.time()- time1} seconds to complete")
+        except:
+            continue
+    for i in range(nframes - 2*SSP - 1, nframes, 10):
+        outfile = pjoin(quasi, str(i))
+        if os.path.exists(outfile+".npz") and not overwrite:
+            print("Output already exists. We won't waste time reproducing it")
+            continue
+        if i%50 == 0:
+            print("On step", outfile)
+            time1 = time.time()
+        try:
+            mc = hc.mode_calculator_gsd(t, i)
+            filt_vecs = np.array(mc.filter_modes())
+            evecs = mc.evecs.T
+            evals = mc.evals
+            if i%SSP == 0:
+                np.savez_compressed(outfile, filt_vecs=filt_vecs, evecs=evecs, evals=evals)
+            else:
+                np.savez_compressed(outfile, filt_vecs=filt_vecs, evals=evals)
+            if i%50 == 0:
+                print(f"Step took {time.time()- time1} seconds to complete")
+        except:
+            continue
