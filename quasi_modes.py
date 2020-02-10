@@ -67,7 +67,8 @@ with gsd.hoomd.open(name=traj, mode='rb') as t:
         except:
             print("Something went wrong! This really shouldn't happen")
             continue
-    for i in range(nframes - 2*SSP - 1, nframes, 10):
+    j = int(nframes//SSP)
+    for i in range((j-2)*SSP, nframes, 10):
         outfile = pjoin(quasi, str(i))
         if os.path.exists(outfile+".npz") and not overwrite:
             print("Output already exists. We won't waste time reproducing it")

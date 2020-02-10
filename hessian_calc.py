@@ -106,7 +106,7 @@ def _tensor_dot(v, p):
     return out
 
 @njit
-def _filter_mode(vec, edges, u3s, v3s, dim, N):
+def _filter_mode(vec, edges, u3s, v3s, dim, N, NE):
     filt_vec = np.zeros_like(vec)
 
     self_outers = np.zeros((N,dim,dim))
@@ -114,7 +114,7 @@ def _filter_mode(vec, edges, u3s, v3s, dim, N):
         u1 = vec[idx*dim:(idx+1)*dim]
         self_outers[idx] = np.outer(u1,u1) 
 
-    for idx in np.arange(N):
+    for idx in np.arange(NE):
         #for e, u, v in zip(edges, u3s, v3s):
         e = edges[idx]
         u = u3s[idx]
@@ -357,7 +357,7 @@ class mode_calculator:
 
     def _filter_mode(self, vec, fast=True):
         if fast:
-            filt_vec = _filter_mode(vec, self.edges, self.u3s, self.v3s, self.dim, self.pos.size//2)
+            filt_vec = _filter_mode(vec, self.edges, self.u3s, self.v3s, self.dim, self.pos.size//2, len(self.edges))
             return filt_vec
         else:
             # this routine is quite slow in practice, only keeping it as a check that the fast routine is correct
@@ -423,4 +423,3 @@ def mode_calculator_nc(s, idx, k_func=hertzian_k, e_func=hertzian_e, use_KDTree=
                         s.variables.rad[idx,:],
                         new_box, k_func, e_func=e_func, k=k, dim=dim, use_KDTree=use_KDTree)
     return mc
-
