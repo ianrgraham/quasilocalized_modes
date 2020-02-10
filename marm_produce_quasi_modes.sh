@@ -3,12 +3,12 @@
 #SBATCH --job-name=quasi_modes
 #SBATCH --output=/data1/shared/igraham/output/quasi_modes/%A-%a.out
 #SBATCH --time=1-00:00:00
-#SBATCH --threads-per-core=1
-#SBATCH --cpus-per-task=1
+#SBATCH --threads-per-core=2
+#SBATCH --cpus-per-task=2
 #SBATCH --ntasks=1
-#SBATCH --array=1-100%50
+#SBATCH --array=1-100
 #SBATCH --partition=compute
-#SBATCH --mem=3G
+#SBATCH --mem=4G
 #SBATCH --nodes=1
 
 module load gcc/8.3.0

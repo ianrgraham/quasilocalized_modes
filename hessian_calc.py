@@ -54,7 +54,7 @@ def PBC_LE(diff, box):
     add_dim = (diff < -box[0]/2).astype(np.int64)
     LE = (add_dim - sub_dim)[::-1]
     LE[1:] = 0
-    diff += (add_dim - sub_dim - LE*box[3])*box[0]
+    diff += (add_dim - sub_dim + LE*box[3])*box[0]
     return diff
 
 @njit

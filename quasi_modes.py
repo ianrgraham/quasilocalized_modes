@@ -22,7 +22,7 @@ SSP = int(np.round(4*float(root_dir.split('/')[-1].split("_")[-2].replace("maxSt
 
 print(SSP)
 
-overwrite = False
+overwrite = True
 
 assert(root_dir != "")
 
@@ -65,6 +65,7 @@ with gsd.hoomd.open(name=traj, mode='rb') as t:
             if i%50 == 0:
                 print(f"Step took {time.time()- time1} seconds to complete")
         except:
+            print("Something went wrong! This really shouldn't happen")
             continue
     for i in range(nframes - 2*SSP - 1, nframes, 10):
         outfile = pjoin(quasi, str(i))
@@ -86,4 +87,5 @@ with gsd.hoomd.open(name=traj, mode='rb') as t:
             if i%50 == 0:
                 print(f"Step took {time.time()- time1} seconds to complete")
         except:
+            print("Something went wrong! This really shouldn't happen")
             continue
