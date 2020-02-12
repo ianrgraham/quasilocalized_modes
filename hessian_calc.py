@@ -193,7 +193,7 @@ class k_multi_table:
 
 class mode_calculator:
 
-    def _find_bond_list(self):
+    def _find_bond_list(self, remove_rattlers=False):
         max_r = np.max(self.rad)
         assert(self.box[0] == self.box[1])
         l = 3*max_r
@@ -231,6 +231,12 @@ class mode_calculator:
         edge_dir = []
         sigmas = []
 
+        if remove_rattlers:
+            lp = len(self.pos)
+            contacts = np.zeros((lp))
+            edge_lookup = np.ones((lp,3))*-1
+            nedges = 0
+
         for i in np.arange(n):
             for j in np.arange(n):
                 for idx, neigh in enumerate(neighbors):
@@ -247,21 +253,68 @@ class mode_calculator:
                             sig_tmp = self.rad[i3] + self.rad[j3]
                             if er_tmp < sig_tmp:
                                 #try:
+
+                                if remove_rattlers:
+                                    if contacts[i3] < 3:
+                                        edge_lookup[i3, contacts[i3]] = nedges
+                                        contacts[i3] += 1
+
+                                    if contacts[j3] < 3:
+                                        edge_lookup[j3, contacts[j3]] = nedges
+                                        contacts[j3] += 1
+                                    
+                                    nedges += 1
                                 edges.append([i3,j3])
                                 edge_len.append(er_tmp)
                                 edge_dir.append(dir_tmp/er_tmp)
                                 sigmas.append(sig_tmp)
-                                    #print(dir_tmp, er_tmp)
-                                #except:
-                                #    print(i3, j3, sig_tmp, dir_tmp, er_tmp)
-                            #else:
-                            #print(i3, j3, sig_tmp, dir_tmp, er_tmp)
+
+        if remove_rattlers:
+            print("Removing Rattlers . . .")
+            tot_ratt = 0
+            rattlers = []
+            edges2remove = []
+            for idx, c in enumerate(contacts):
+                # i suppose this could be done faster
+                if c < 3:
+                    tot_ratt += 1
+                    rattlers.append(idx)
+                    for l in edge_lookup[idx]:
+                        if l > -1:
+                            edges2remove.append(l)
+                        else:
+                            break
+
+            edges2remove = np.unique(edges2remove) # incase two bonded particles are both rattlers
+                    
+            print(f"{tot_ratt} rattlers found")
+
                                 
 
         self.edges = np.array(edges)
         self.edge_len = np.array(edge_len)
         self.edge_dir = np.array(edge_dir)
         self.sigmas = np.array(sigmas)
+
+        if remove_rattlers:
+            # how many arrays need to be adjusted?
+            # edges, edge_lin, edge_dir, sigmas, pos, rad
+            self.edges = np.delete(self.edges, edges2remove)
+            self.edge_len = np.delete(self.edge_len, edges2remove)
+            self.edge_dir = np.delete(self.edge_dir, edges2remove)
+            self.sigmas = np.delete(self.sigmas, edges2remove)
+
+            # transform indices of edge data
+            updates = np.delete(-1*np.ones((lp)), rattlers)
+            updates = -1* (np.digitize(updates, rattlers) + 1)
+            self.pos = np.delete(self.pos, rattlers)
+            self.rad = np.delete(self.rad, rattlers)
+            
+            for idx in np.arange(len(self.edges)):
+                # this here will shift all indicies, I hope everything I just wrote isn't terribly slow
+                self.edges[idx,0] += updates[self.edges[idx,0]]
+                self.edges[idx,1] += updates[self.edges[idx,1]]
+            print(f"All rattlers removed")
         return
     
     
@@ -314,7 +367,7 @@ class mode_calculator:
         self.evecs = vecs
 
 
-    def __init__(self, pos, rad, box, k_func, e_func=None, use_KDTree=False, k=50, dim=2):
+    def __init__(self, pos, rad, box, k_func, e_func=None, use_KDTree=False, k=50, dim=2, remove_rattlers=False):
         assert(dim == 2)
         self.pos=pos.reshape((len(pos)//dim, dim))
         self.rad=rad
@@ -326,7 +379,7 @@ class mode_calculator:
         if use_KDTree:
             self._init_k_table()
         print("Creating bond list.")
-        self._find_bond_list()
+        self._find_bond_list(remove_rattlers=remove_rattlers)
         print("Constructing Hessian")
         self._calc_hessian(use_KDTree=use_KDTree)
         print("Calculating",k,"smallest eigenmodes and vectors")
