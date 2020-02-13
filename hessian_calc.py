@@ -77,8 +77,9 @@ def harmonic_e(r, sigma):
     # return 3rd derivative of harmonic potential
     return 0
 
-@njit
+#@njit
 def _routine_calc_hessian(e, el, ed, s, dim, hessian, func):
+    print(e.shape, el.shape, ed.shape, s.shape)
     for l in np.arange(len(e)):
         # get K
         k = func(el[l], s[l])*ed[l]
@@ -233,8 +234,9 @@ class mode_calculator:
 
         if remove_rattlers:
             lp = len(self.pos)
-            contacts = np.zeros((lp))
-            edge_lookup = np.ones((lp,3))*-1
+            contacts = np.zeros((lp), dtype=np.int32)
+            edge_lookup = np.ones((lp,3), dtype=np.int32)*-1
+            print(edge_lookup.shape)
             nedges = 0
 
         for i in np.arange(n):
@@ -256,6 +258,8 @@ class mode_calculator:
 
                                 if remove_rattlers:
                                     if contacts[i3] < 3:
+                                        #print(lp, i3)
+                                        #print(contacts[i3])
                                         edge_lookup[i3, contacts[i3]] = nedges
                                         contacts[i3] += 1
 
@@ -264,7 +268,7 @@ class mode_calculator:
                                         contacts[j3] += 1
                                     
                                     nedges += 1
-                                edges.append([i3,j3])
+                                edges.append(np.array([i3,j3]))
                                 edge_len.append(er_tmp)
                                 edge_dir.append(dir_tmp/er_tmp)
                                 sigmas.append(sig_tmp)
@@ -289,29 +293,31 @@ class mode_calculator:
                     
             print(f"{tot_ratt} rattlers found")
 
-                                
 
         self.edges = np.array(edges)
         self.edge_len = np.array(edge_len)
         self.edge_dir = np.array(edge_dir)
         self.sigmas = np.array(sigmas)
 
-        if remove_rattlers:
+        if remove_rattlers:# and tot_ratt > 0:
             # how many arrays need to be adjusted?
             # edges, edge_lin, edge_dir, sigmas, pos, rad
-            self.edges = np.delete(self.edges, edges2remove)
+            self.edges = np.delete(self.edges, edges2remove, axis=0)
             self.edge_len = np.delete(self.edge_len, edges2remove)
-            self.edge_dir = np.delete(self.edge_dir, edges2remove)
+            self.edge_dir = np.delete(self.edge_dir, edges2remove, axis=0)
             self.sigmas = np.delete(self.sigmas, edges2remove)
 
             # transform indices of edge data
-            updates = np.delete(-1*np.ones((lp)), rattlers)
-            updates = -1* (np.digitize(updates, rattlers) + 1)
+            updates = np.arange((lp))
+            updates = -1* (np.digitize(updates, rattlers))
             self.pos = np.delete(self.pos, rattlers)
             self.rad = np.delete(self.rad, rattlers)
+
+            #print(self.edges.shape)
             
             for idx in np.arange(len(self.edges)):
                 # this here will shift all indicies, I hope everything I just wrote isn't terribly slow
+                #print(idx, self.edges[idx])
                 self.edges[idx,0] += updates[self.edges[idx,0]]
                 self.edges[idx,1] += updates[self.edges[idx,1]]
             print(f"All rattlers removed")
@@ -377,7 +383,12 @@ class mode_calculator:
         self.e_func = e_func
         self.U3_calculated = False
         if use_KDTree:
-            self._init_k_table()
+            """
+            So I wasn't expecting this, but the KDTree is actually slower than just doing the floating point calculation for each bond.
+            I'm sure because I'm using uniform bins in low-D, the faster method would be to divide the distance by the bin size to find nearest neighbors
+            The KDTree is probably more useful in the case of non-uniform bins in many dimensions
+            """
+            self._init_k_table() 
         print("Creating bond list.")
         self._find_bond_list(remove_rattlers=remove_rattlers)
         print("Constructing Hessian")
@@ -453,17 +464,17 @@ class mode_calculator:
 Below I made some nice wrappers for returning a mode_calculator object for the different systems that I have
 """
 
-def mode_calculator_gsd(gsd_file_handle, idx, r_func=get_hoomd_bidisperse_r, k_func=hertzian_k, e_func=hertzian_e, use_KDTree=False, k=30, dim=2):
+def mode_calculator_gsd(gsd_file_handle, idx, r_func=get_hoomd_bidisperse_r, k_func=hertzian_k, e_func=hertzian_e, use_KDTree=False, k=30, dim=2, remove_rattlers=True):
     """
     for gsd files produced from hoomd
     """
     s = gsd_file_handle[idx]
     mc = mode_calculator(s.particles.position[:,:dim].flatten(), 
                         np.vectorize(r_func)(s.particles.typeid),
-                        s.configuration.box, k_func, e_func=e_func, k=k, dim=dim, use_KDTree=use_KDTree)
+                        s.configuration.box, k_func, e_func=e_func, k=k, dim=dim, use_KDTree=use_KDTree, remove_rattlers=remove_rattlers)
     return mc
 
-def mode_calculator_nc(s, idx, k_func=hertzian_k, e_func=hertzian_e, use_KDTree=False, k=30, dim=2):
+def mode_calculator_nc(s, idx, k_func=hertzian_k, e_func=hertzian_e, use_KDTree=False, k=30, dim=2, remove_rattlers=True):
     """
     for netcdf files produced from Carl Goodrich's jsrc code
     """
@@ -474,5 +485,5 @@ def mode_calculator_nc(s, idx, k_func=hertzian_k, e_func=hertzian_e, use_KDTree=
     new_box = np.array([box[0],box[-1],1,box[1]/box[0]])
     mc = mode_calculator(s.variables.pos[idx,:], 
                         s.variables.rad[idx,:],
-                        new_box, k_func, e_func=e_func, k=k, dim=dim, use_KDTree=use_KDTree)
+                        new_box, k_func, e_func=e_func, k=k, dim=dim, use_KDTree=use_KDTree, remove_rattlers=remove_rattlers)
     return mc

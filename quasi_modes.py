@@ -14,9 +14,12 @@ import hessian_calc as hc
 
 parser = argparse.ArgumentParser(description="Produce quasilocalized mode data from hoomd trajectories.")
 parser.add_argument('-d','--dir',help="Directory of the trajectory.", type=str, default="")
+parser.add_argument('-r','--removeRattlers',help="Remove rattlers from Hessian calculation.", action='store_true')
 cmdargs = parser.parse_args()
 
 root_dir = cmdargs.dir
+
+remove_ratt = cmdargs.removeRattlers
 
 SSP = int(np.round(4*float(root_dir.split('/')[-1].split("_")[-2].replace("maxStrain",""))/0.0001))
 
@@ -39,7 +42,10 @@ print(nframes)
 
 with gsd.hoomd.open(name=traj, mode='rb') as t:
 
-    quasi = pjoin(root_dir, "quasi")
+    if remove_ratt:
+        quasi = pjoin(root_dir, "quasi_noratt")
+    else:
+        quasi = pjoin(root_dir, "quasi")
 
     os.makedirs(quasi, exist_ok=True)
 
@@ -54,7 +60,7 @@ with gsd.hoomd.open(name=traj, mode='rb') as t:
             print("On step", outfile)
             time1 = time.time()
         try:
-            mc = hc.mode_calculator_gsd(t, i)
+            mc = hc.mode_calculator_gsd(t, i, remove_rattlers=remove_ratt)
             filt_vecs = np.array(mc.filter_modes())
             evecs = mc.evecs.T
             evals = mc.evals
@@ -77,7 +83,7 @@ with gsd.hoomd.open(name=traj, mode='rb') as t:
             print("On step", outfile)
             time1 = time.time()
         try:
-            mc = hc.mode_calculator_gsd(t, i)
+            mc = hc.mode_calculator_gsd(t, i, remove_rattlers=remove_ratt)
             filt_vecs = np.array(mc.filter_modes())
             evecs = mc.evecs.T
             evals = mc.evals
