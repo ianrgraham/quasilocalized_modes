@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --job-name=quasi_modes
+#SBATCH --job-name=modes_no_ratt
 #SBATCH --output=/data1/shared/igraham/output/quasi_modes/%A-%a.out
 #SBATCH --time=1-00:00:00
 #SBATCH --threads-per-core=1

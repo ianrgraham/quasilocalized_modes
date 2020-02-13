@@ -77,9 +77,9 @@ def harmonic_e(r, sigma):
     # return 3rd derivative of harmonic potential
     return 0
 
-#@njit
+@njit
 def _routine_calc_hessian(e, el, ed, s, dim, hessian, func):
-    print(e.shape, el.shape, ed.shape, s.shape)
+    #print(e.shape, el.shape, ed.shape, s.shape)
     for l in np.arange(len(e)):
         # get K
         k = func(el[l], s[l])*ed[l]
@@ -236,7 +236,7 @@ class mode_calculator:
             lp = len(self.pos)
             contacts = np.zeros((lp), dtype=np.int32)
             edge_lookup = np.ones((lp,3), dtype=np.int32)*-1
-            print(edge_lookup.shape)
+            #print(edge_lookup.shape)
             nedges = 0
 
         for i in np.arange(n):
@@ -292,6 +292,8 @@ class mode_calculator:
             edges2remove = np.unique(edges2remove) # incase two bonded particles are both rattlers
                     
             print(f"{tot_ratt} rattlers found")
+            rattlers = np.array(rattlers)
+            self.rattlers = rattlers
 
 
         self.edges = np.array(edges)
@@ -299,7 +301,7 @@ class mode_calculator:
         self.edge_dir = np.array(edge_dir)
         self.sigmas = np.array(sigmas)
 
-        if remove_rattlers:# and tot_ratt > 0:
+        if remove_rattlers and tot_ratt > 0:
             # how many arrays need to be adjusted?
             # edges, edge_lin, edge_dir, sigmas, pos, rad
             self.edges = np.delete(self.edges, edges2remove, axis=0)
@@ -310,7 +312,7 @@ class mode_calculator:
             # transform indices of edge data
             updates = np.arange((lp))
             updates = -1* (np.digitize(updates, rattlers))
-            self.pos = np.delete(self.pos, rattlers)
+            self.pos = np.delete(self.pos, rattlers, axis=0)
             self.rad = np.delete(self.rad, rattlers)
 
             #print(self.edges.shape)
@@ -389,11 +391,11 @@ class mode_calculator:
             The KDTree is probably more useful in the case of non-uniform bins in many dimensions
             """
             self._init_k_table() 
-        print("Creating bond list.")
+        print("Creating bond list")
         self._find_bond_list(remove_rattlers=remove_rattlers)
         print("Constructing Hessian")
         self._calc_hessian(use_KDTree=use_KDTree)
-        print("Calculating",k,"smallest eigenmodes and vectors")
+        print("Calculating",k,"smallest eigenvalues and modes")
         try:
             self._calc_modes(k=k)
         except RuntimeError:
@@ -464,7 +466,7 @@ class mode_calculator:
 Below I made some nice wrappers for returning a mode_calculator object for the different systems that I have
 """
 
-def mode_calculator_gsd(gsd_file_handle, idx, r_func=get_hoomd_bidisperse_r, k_func=hertzian_k, e_func=hertzian_e, use_KDTree=False, k=30, dim=2, remove_rattlers=True):
+def mode_calculator_gsd(gsd_file_handle, idx, r_func=get_hoomd_bidisperse_r, k_func=hertzian_k, e_func=hertzian_e, use_KDTree=False, k=50, dim=2, remove_rattlers=True):
     """
     for gsd files produced from hoomd
     """
