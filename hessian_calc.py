@@ -159,7 +159,7 @@ class k_table:
         self.points = [[p] for p in self.points_np]
         for i, r in enumerate(self.points_np):
             self.vals[i] = U_dxdx(r, sigma)
-        self.tree = spa.cKDTree(self.points)
+        self.tree = spa.KDTree(self.points)
     
     def get_k(self, r):
         dist, ind = self.tree.query([r], k=2)
@@ -476,16 +476,23 @@ def mode_calculator_gsd(gsd_file_handle, idx, r_func=get_hoomd_bidisperse_r, k_f
                         s.configuration.box, k_func, e_func=e_func, k=k, dim=dim, use_KDTree=use_KDTree, remove_rattlers=remove_rattlers)
     return mc
 
+@njit
+def _apply_box_flat(pos, box_mat, dim=2):
+    new_pos = np.zeros_like(pos)
+    #inv_mat = np.linalg.inv(box_mat)
+    for i in np.arange(len(new_pos)//dim):
+        new_pos[i] = np.dot(box_mat, pos[i])
+    return new_pos
+
 def mode_calculator_nc(s, idx, k_func=hertzian_k, e_func=hertzian_e, use_KDTree=False, k=30, dim=2, remove_rattlers=True):
     """
     for netcdf files produced from Carl Goodrich's jsrc code
     """
     print("This should not work at the moment")
     print("I need to apply the box matrix forward to all positions")
-    return None
     box = s.variables.BoxMatrix[idx,:]
     new_box = np.array([box[0],box[-1],1,box[1]/box[0]])
-    mc = mode_calculator(s.variables.pos[idx,:], 
-                        s.variables.rad[idx,:],
+    mc = mode_calculator(s.variables['pos'][idx,:], 
+                        s.variables['rad'][idx,:],
                         new_box, k_func, e_func=e_func, k=k, dim=dim, use_KDTree=use_KDTree, remove_rattlers=remove_rattlers)
     return mc
