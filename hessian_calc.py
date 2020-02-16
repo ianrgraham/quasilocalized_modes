@@ -1,5 +1,5 @@
 """
-Goal of this module is to quickly calculate the hessian for a system of N particles with 
+Goal of this module is to quickly calculate the hessian for a system of N particles with LE boundary conditions
 """
 
 import numpy as np
